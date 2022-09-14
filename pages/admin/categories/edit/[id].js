@@ -3,25 +3,35 @@ import { useForm } from 'react-hook-form';
 import axios from 'axios';
 
 export async function getServerSideProps(context) {
-  const res = await axios.get(
+  const categories = await axios.get(
     `${process.env.NEXT_PUBLIC_URL}/api/categories/list`
+  );
+  const category = await axios.get(
+    `${process.env.NEXT_PUBLIC_URL}/api/categories/get/${context.params.id}`
   );
   return {
     props: {
-      categories: res.data,
+      categories: categories.data,
+      category: category.data,
     },
   };
 }
 
-export default function Create(props) {
+export default function Edit(props) {
   const [categories, setCategories] = useState(props.categories);
+  const [category, setCategory] = useState(props.category);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      name: category.name,
+      parent_id: category.parent_id,
+    },
+  });
 
   const getCategories = async () => {
     await axios
@@ -34,13 +44,23 @@ export default function Create(props) {
       });
   };
 
+  const getCategory = async () => {
+    await axios
+      .get(`/api/categories/get/${category.id}`)
+      .then((res) => {
+        setCategory(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
   const onSubmit = (data) => {
     axios
-      .post('/api/categories/create', data)
+      .post(`/api/categories/edit/${props.category.id}`, data)
       .then((res) => {
-        console.log(res.data);
+        getCategory();
         getCategories();
-        reset();
       })
       .catch((err) => {
         console.log(err);
